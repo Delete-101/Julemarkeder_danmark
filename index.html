@@ -68,8 +68,13 @@
       <!-- Left Sidebar / Drawer -->
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-          <h2><i class="fa-solid fa-sliders"></i> Filtrér Julemarkeder</h2>
-          <span id="market-count-badge" class="count-badge">Viser 0 markeder</span>
+          <h2><i class="fa-solid fa-sliders"></i> Julemarkeder</h2>
+          <div class="sidebar-header-right">
+            <span id="market-count-badge" class="count-badge">Viser 0 markeder</span>
+            <button id="close-sidebar-btn" class="close-sidebar-btn mobile-only" title="Luk liste">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
         </div>
 
         <!-- Filter Controls -->
@@ -144,6 +149,11 @@
 
         <!-- Map Overlay Floating Controls -->
         <div class="map-overlay-controls">
+          <button id="mobile-map-list-fab" class="map-fab mobile-only highlight-fab" title="Åbn julemarked-liste">
+            <i class="fa-solid fa-list-ul"></i>
+            <span>Markeder & Filtre</span>
+          </button>
+          
           <button id="recenter-map-btn" class="map-fab" title="Nulstil kortudsnit (Hele Danmark)">
             <i class="fa-solid fa-compass"></i>
             <span>Hele Danmark</span>

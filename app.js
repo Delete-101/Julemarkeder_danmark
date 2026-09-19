@@ -2052,12 +2052,18 @@ class JulemarkederApp {
       }
     });
 
-    // Mobile Sidebar Drawer Toggle
+    // Mobile Sidebar Drawer Toggle & FAB
     const mobileToggle = document.getElementById('mobile-sidebar-toggle');
+    const mobileMapFab = document.getElementById('mobile-map-list-fab');
+    const closeSidebarBtn = document.getElementById('close-sidebar-btn');
     const sidebar = document.getElementById('sidebar');
-    mobileToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('mobile-open');
-    });
+
+    const toggleSidebar = () => sidebar.classList.toggle('mobile-open');
+    const closeSidebar = () => sidebar.classList.remove('mobile-open');
+
+    if (mobileToggle) mobileToggle.addEventListener('click', toggleSidebar);
+    if (mobileMapFab) mobileMapFab.addEventListener('click', toggleSidebar);
+    if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', closeSidebar);
 
     // Modal Close Events
     const closeModalBtn = document.getElementById('close-modal-btn');
@@ -2288,6 +2294,12 @@ class JulemarkederApp {
       if (marker) {
         marker.openPopup();
       }
+    }
+
+    // Auto-close sidebar on mobile after choosing a market
+    if (window.innerWidth <= 900) {
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar) sidebar.classList.remove('mobile-open');
     }
 
     // Highlight card
