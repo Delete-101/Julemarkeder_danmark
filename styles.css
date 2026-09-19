@@ -739,10 +739,11 @@ html, body {
   background: linear-gradient(135deg, var(--crimson-red), #9b111e);
   border: 2px solid var(--gold-primary);
   border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6), 0 0 10px rgba(255, 209, 102, 0.4);
+  transform: rotate(-45deg) translateZ(0);
+  will-change: transform;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   cursor: pointer;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .custom-pin i {
@@ -1191,8 +1192,32 @@ html, body {
   background: var(--gold-hover);
 }
 
+/* Sidebar Search Wrapper */
+.sidebar-search-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.sidebar-search-wrapper input {
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-size: 0.85rem;
+  outline: none;
+  transition: var(--transition-fast);
+}
+
+.sidebar-search-wrapper input:focus {
+  border-color: var(--gold-primary);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 0 12px rgba(255, 209, 102, 0.2);
+}
+
 /* ==========================================================================
-   Responsive Mobile Media Queries
+   Responsive Mobile Media Queries & Performance Boosts
    ========================================================================== */
 @media (max-width: 900px) {
   .main-header {
@@ -1206,13 +1231,14 @@ html, body {
     height: 100%;
     width: calc(100% - 40px);
     max-width: 380px;
-    transform: translateX(-100%);
+    transform: translate3d(-100%, 0, 0);
+    will-change: transform;
     box-shadow: 10px 0 30px rgba(0, 0, 0, 0.7);
     -webkit-overflow-scrolling: touch;
   }
 
   .sidebar.mobile-open {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
 
   .mobile-only {
@@ -1241,37 +1267,74 @@ html, body {
   }
 }
 
+@media (max-width: 768px) {
+  /* Ultra-smooth GPU rendering for pins on mobile CPUs/GPUs */
+  .custom-pin {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+    transition: none !important; /* Disable hover transitions on touch to avoid input lag */
+  }
+
+  /* Simplify lightbulbs on mobile to eliminate box-shadow paint lag */
+  .lightbulb-string li {
+    box-shadow: none !important;
+  }
+
+  .lightbulb-string li:nth-child(5n+1) { background: #ff3333; }
+  .lightbulb-string li:nth-child(5n+2) { background: #2ecc71; }
+  .lightbulb-string li:nth-child(5n+3) { background: #ffd166; }
+  .lightbulb-string li:nth-child(5n+4) { background: #00d2d3; }
+  .lightbulb-string li:nth-child(5n+5) { background: #ff75a0; }
+}
+
 @media (max-width: 600px) {
   .main-header {
     height: 64px;
-    gap: 0.5rem;
+    gap: 0.4rem;
+    position: relative;
   }
 
   .brand-icon {
-    font-size: 1.6rem;
+    font-size: 1.5rem;
   }
 
   .brand-titles h1 {
-    font-size: 1.05rem;
+    font-size: 0.98rem;
+    white-space: nowrap;
   }
   
   .header-search {
-    max-width: 150px;
+    display: none; /* Mobile search uses expandable overlay or sidebar search */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(14, 26, 18, 0.98);
+    backdrop-filter: blur(16px);
+    z-index: 1100;
+    padding: 0.6rem 1rem;
+    align-items: center;
+    max-width: 100%;
+  }
+
+  .header-search.mobile-active {
+    display: flex;
   }
 
   .header-search input {
-    padding: 0.5rem 1.8rem 0.5rem 2rem;
-    font-size: 0.8rem;
+    padding: 0.6rem 2.6rem 0.6rem 2.5rem;
+    font-size: 0.9rem;
+    width: 100%;
   }
 
   .header-search .search-icon {
-    left: 0.65rem;
-    font-size: 0.8rem;
+    left: 1.6rem;
+    font-size: 0.9rem;
   }
   
   .control-btn {
     padding: 0.45rem 0.65rem;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
   }
 
   .control-btn .btn-text {

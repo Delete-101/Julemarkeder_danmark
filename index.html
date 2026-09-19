@@ -36,7 +36,7 @@
       </div>
 
       <!-- Quick Search Bar -->
-      <div class="header-search">
+      <div class="header-search" id="header-search-container">
         <i class="fa-solid fa-magnifying-glass search-icon"></i>
         <input type="text" id="search-input" placeholder="Søg på by, julemarked eller slot..." aria-label="Søg julemarked">
         <button id="clear-search-btn" class="clear-btn" title="Nulstil søgning" style="display: none;">
@@ -46,6 +46,10 @@
 
       <!-- Action & Control Buttons -->
       <div class="header-controls">
+        <button id="mobile-search-toggle" class="control-btn mobile-only" title="Søg julemarked">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
+
         <button id="favorites-toggle-btn" class="control-btn" title="Vis kun mine favoritter">
           <i class="fa-solid fa-heart"></i>
           <span class="btn-text">Favoritter</span>
@@ -79,6 +83,13 @@
 
         <!-- Filter Controls -->
         <div class="filter-section">
+          <!-- Text Search Filter in Sidebar -->
+          <div class="filter-group">
+            <label for="sidebar-search-input"><i class="fa-solid fa-magnifying-glass"></i> Søg julemarked</label>
+            <div class="sidebar-search-wrapper">
+              <input type="text" id="sidebar-search-input" class="custom-select" placeholder="Søg på by, julemarked eller slot..." aria-label="Søg julemarked">
+            </div>
+          </div>
           <!-- Region Filter -->
           <div class="filter-group">
             <label for="region-select"><i class="fa-solid fa-map-location-dot"></i> Region</label>

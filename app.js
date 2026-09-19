@@ -1982,22 +1982,44 @@ class JulemarkederApp {
 
   // Initialize UI Event Listeners
   initUI() {
-    // Search input
+    // Bi-directional Search inputs (Header Search & Sidebar Search)
     const searchInput = document.getElementById('search-input');
+    const sidebarSearchInput = document.getElementById('sidebar-search-input');
     const clearSearchBtn = document.getElementById('clear-search-btn');
+    const mobileSearchToggle = document.getElementById('mobile-search-toggle');
+    const headerSearchContainer = document.getElementById('header-search-container');
 
-    searchInput.addEventListener('input', (e) => {
-      this.activeFilters.search = e.target.value.toLowerCase().trim();
-      clearSearchBtn.style.display = this.activeFilters.search ? 'block' : 'none';
-      this.render();
-    });
+    const handleSearchChange = (query) => {
+      const cleanQuery = query.toLowerCase().trim();
+      this.activeFilters.search = cleanQuery;
 
-    clearSearchBtn.addEventListener('click', () => {
-      searchInput.value = '';
-      this.activeFilters.search = '';
-      clearSearchBtn.style.display = 'none';
+      if (searchInput && searchInput.value !== query) searchInput.value = query;
+      if (sidebarSearchInput && sidebarSearchInput.value !== query) sidebarSearchInput.value = query;
+      if (clearSearchBtn) clearSearchBtn.style.display = cleanQuery ? 'block' : 'none';
+
       this.render();
-    });
+    };
+
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => handleSearchChange(e.target.value));
+    }
+
+    if (sidebarSearchInput) {
+      sidebarSearchInput.addEventListener('input', (e) => handleSearchChange(e.target.value));
+    }
+
+    if (clearSearchBtn) {
+      clearSearchBtn.addEventListener('click', () => handleSearchChange(''));
+    }
+
+    if (mobileSearchToggle && headerSearchContainer) {
+      mobileSearchToggle.addEventListener('click', () => {
+        headerSearchContainer.classList.toggle('mobile-active');
+        if (headerSearchContainer.classList.contains('mobile-active')) {
+          searchInput.focus();
+        }
+      });
+    }
 
     // Region Select
     document.getElementById('region-select').addEventListener('change', (e) => {
@@ -2090,8 +2112,14 @@ class JulemarkederApp {
       favoritesOnly: false
     };
 
-    document.getElementById('search-input').value = '';
-    document.getElementById('clear-search-btn').style.display = 'none';
+    const searchInput = document.getElementById('search-input');
+    const sidebarSearchInput = document.getElementById('sidebar-search-input');
+    const clearSearchBtn = document.getElementById('clear-search-btn');
+
+    if (searchInput) searchInput.value = '';
+    if (sidebarSearchInput) sidebarSearchInput.value = '';
+    if (clearSearchBtn) clearSearchBtn.style.display = 'none';
+
     document.getElementById('region-select').value = 'all';
 
     const categoryChips = document.getElementById('category-chips');
@@ -2110,12 +2138,29 @@ class JulemarkederApp {
     }
   }
 
-  // Initialize Leaflet Map
+  // Initialize Leaflet Map (Optimized for ultra-smooth mobile touch performance)
   initMap() {
+    const isMobile = window.innerWidth <= 600;
+
     // Center of Denmark
     this.map = L.map('map', {
-      zoomControl: false
-    }).setView([56.0, 11.0], 7);
+      zoomControl: false,
+      preferCanvas: true,
+      updateWhenZooming: false,
+      updateWhenIdle: true,
+      bounceAtZoomLimits: false,
+      touchZoom: true,
+      inertia: true,
+      inertiaDeceleration: 3500,
+      inertiaMaxSpeed: 1400,
+      wheelDebounceTime: 40
+    }).setView([56.0, 11.0], isMobile ? 6 : 7);
+
+    // Pause heavy canvas animations while panning map on mobile
+    this.map.on('movestart touchstart', () => { window.isMapPanning = true; });
+    this.map.on('moveend touchend', () => { 
+      setTimeout(() => { window.isMapPanning = false; }, 120);
+    });
 
     // Add Zoom Control at top right
     L.control.zoom({ position: 'topright' }).addTo(this.map);
@@ -2123,7 +2168,9 @@ class JulemarkederApp {
     // Esri World Dark Gray Canvas (Fully free, sleek dark aesthetic, no watermarks)
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-      maxZoom: 16
+      maxZoom: 16,
+      updateWhenIdle: true,
+      keepBuffer: 3
     }).addTo(this.map);
 
     this.updateMapMarkers();
@@ -2153,41 +2200,52 @@ class JulemarkederApp {
     });
   }
 
-  // Update map markers according to filtered markets
+  // Update map markers according to filtered markets (Persistent layer optimization)
   updateMapMarkers() {
     if (!this.map) return;
 
-    // Clear existing markers
-    this.markersMap.forEach(marker => this.map.removeLayer(marker));
-    this.markersMap.clear();
+    const filtered = new Set(this.getFilteredMarkets().map(m => m.id));
 
-    const filtered = this.getFilteredMarkets();
+    this.markets.forEach(market => {
+      let marker = this.markersMap.get(market.id);
 
-    filtered.forEach(market => {
-      const icon = this.createCustomIcon(market);
-      const marker = L.marker(market.coords, { icon: icon }).addTo(this.map);
+      // Create marker once and reuse
+      if (!marker) {
+        const icon = this.createCustomIcon(market);
+        marker = L.marker(market.coords, { icon: icon, riseOnHover: true });
 
-      // Popup Content
-      const popupHtml = `
-        <div class="popup-card">
-          <div class="popup-title">${market.name}</div>
-          <div class="popup-sub"><i class="fa-solid fa-location-dot"></i> ${market.city}</div>
-          <div class="rating-stars" style="margin-bottom: 0.6rem;">
-            ★ ${market.rating} <span style="font-weight:400; color:var(--text-muted);">(${market.reviewsCount} anmeldelser)</span>
+        const popupHtml = `
+          <div class="popup-card">
+            <div class="popup-title">${market.name}</div>
+            <div class="popup-sub"><i class="fa-solid fa-location-dot"></i> ${market.city}</div>
+            <div class="rating-stars" style="margin-bottom: 0.6rem;">
+              ★ ${market.rating} <span style="font-weight:400; color:var(--text-muted);">(${market.reviewsCount} anmeldelser)</span>
+            </div>
+            <button class="popup-btn" onclick="window.app.openMarketModal('${market.id}')">
+              <i class="fa-solid fa-circle-info"></i> Se alle detaljer
+            </button>
           </div>
-          <button class="popup-btn" onclick="window.app.openMarketModal('${market.id}')">
-            <i class="fa-solid fa-circle-info"></i> Se alle detaljer
-          </button>
-        </div>
-      `;
+        `;
 
-      marker.bindPopup(popupHtml);
+        marker.bindPopup(popupHtml, { autoPan: true, autoPanPadding: [20, 20] });
 
-      marker.on('click', () => {
-        this.highlightCardInSidebar(market.id);
-      });
+        marker.on('click', () => {
+          this.highlightCardInSidebar(market.id);
+        });
 
-      this.markersMap.set(market.id, marker);
+        this.markersMap.set(market.id, marker);
+      }
+
+      // Toggle marker layer visibility based on filter without re-instantiating DOM elements
+      if (filtered.has(market.id)) {
+        if (!this.map.hasLayer(marker)) {
+          this.map.addLayer(marker);
+        }
+      } else {
+        if (this.map.hasLayer(marker)) {
+          this.map.removeLayer(marker);
+        }
+      }
     });
   }
 
@@ -2499,7 +2557,7 @@ class JulemarkederApp {
     modal.setAttribute('aria-hidden', 'true');
   }
 
-  // Particle Snow Animation
+  // Particle Snow Animation (Performance optimized for mobile)
   initSnowEffect() {
     const canvas = document.getElementById('snow-canvas');
     if (!canvas) return;
@@ -2514,20 +2572,23 @@ class JulemarkederApp {
       height = canvas.height = window.innerHeight;
     });
 
-    const particlesCount = 80;
+    // Reduce particle count on mobile to keep 60fps performance
+    const isMobile = window.innerWidth < 600;
+    const particlesCount = isMobile ? 30 : 75;
     const particles = Array.from({ length: particlesCount }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      radius: Math.random() * 2.5 + 1,
-      speedY: Math.random() * 0.8 + 0.3,
-      speedX: Math.random() * 0.5 - 0.25,
-      opacity: Math.random() * 0.7 + 0.3
+      radius: Math.random() * 2.2 + 0.8,
+      speedY: Math.random() * 0.7 + 0.3,
+      speedX: Math.random() * 0.4 - 0.2,
+      opacity: Math.random() * 0.6 + 0.3
     }));
 
     function renderSnow() {
-      ctx.clearRect(0, 0, width, height);
+      // If map is currently being dragged/panned on touch, skip snow render frame to avoid lag
+      if (snowActive && !window.isMapPanning) {
+        ctx.clearRect(0, 0, width, height);
 
-      if (snowActive) {
         particles.forEach(p => {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
@@ -2544,6 +2605,8 @@ class JulemarkederApp {
           if (p.x > width) p.x = 0;
           if (p.x < 0) p.x = width;
         });
+      } else if (!snowActive) {
+        ctx.clearRect(0, 0, width, height);
       }
 
       requestAnimationFrame(renderSnow);
