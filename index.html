@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Danmarks Julemarkeder 🎄 | Interaktivt Kort over Julemarkeder i Danmark</title>
+  <meta name="description" content="Udforsk alle Danmarks mest stemningsfulde julemarkeder på et interaktivt kort. Find adresser, åbningstider, entrépriser og anmeldelser for julemarkeder i Hovedstaden, Sjælland, Fyn, Jylland og Bornholm.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  
+  <!-- Application CSS -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Snow effect overlay canvas -->
+  <canvas id="snow-canvas"></canvas>
+
+  <div class="app-container">
+    <!-- Top Header Navigation -->
+    <header class="main-header">
+      <div class="header-brand">
+        <div class="brand-icon">🎄</div>
+        <div class="brand-titles">
+          <h1>Jul i Danmark</h1>
+          <p class="brand-subtitle">Interaktivt kort over alle danske julemarkeder</p>
+        </div>
+      </div>
+
+      <!-- Quick Search Bar -->
+      <div class="header-search">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="search-input" placeholder="Søg på by, julemarked eller slot..." aria-label="Søg julemarked">
+        <button id="clear-search-btn" class="clear-btn" title="Nulstil søgning" style="display: none;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Action & Control Buttons -->
+      <div class="header-controls">
+        <button id="favorites-toggle-btn" class="control-btn" title="Vis kun mine favoritter">
+          <i class="fa-solid fa-heart"></i>
+          <span class="btn-text">Favoritter</span>
+          <span id="fav-counter" class="badge">0</span>
+        </button>
+
+        <button id="snow-toggle-btn" class="control-btn active" title="Slå sne-effekt til/fra">
+          <i class="fa-solid fa-snowflake"></i>
+          <span class="btn-text">Sne</span>
+        </button>
+
+        <button id="mobile-sidebar-toggle" class="control-btn mobile-only" title="Åbn/luk liste">
+          <i class="fa-solid fa-list-ul"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area: Sidebar + Map -->
+    <main class="main-content">
+      <!-- Left Sidebar / Drawer -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <h2><i class="fa-solid fa-sliders"></i> Filtrér Julemarkeder</h2>
+          <span id="market-count-badge" class="count-badge">Viser 0 markeder</span>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="filter-section">
+          <!-- Region Filter -->
+          <div class="filter-group">
+            <label for="region-select"><i class="fa-solid fa-map-location-dot"></i> Region</label>
+            <select id="region-select" class="custom-select">
+              <option value="all">Hele Danmark (Alle regioner)</option>
+              <option value="Hovedstaden">Hovedstaden & Sjælland</option>
+              <option value="Fyn">Fyn & Øerne</option>
+              <option value="Jylland">Jylland (Nord, Øst & Syd)</option>
+              <option value="Bornholm">Bornholm</option>
+            </select>
+          </div>
+
+          <!-- Category Chips -->
+          <div class="filter-group">
+            <label><i class="fa-solid fa-tags"></i> Kategori</label>
+            <div class="category-chips" id="category-chips">
+              <button class="chip active" data-category="all">Alle</button>
+              <button class="chip" data-category="Slot & Herregård">🏰 Slotte</button>
+              <button class="chip" data-category="By & Centrum">🌆 Bymidte</button>
+              <button class="chip" data-category="Historisk">📜 Historisk</button>
+              <button class="chip" data-category="Kunst & Design">🎨 Kunst & Design</button>
+            </div>
+          </div>
+
+          <!-- Entry Fee Filter -->
+          <div class="filter-group">
+            <label><i class="fa-solid fa-ticket"></i> Entréforhold</label>
+            <div class="entry-filter-toggle">
+              <button class="toggle-option active" data-entry="all">Alle</button>
+              <button class="toggle-option" data-entry="gratis">🎁 Gratis Entré</button>
+              <button class="toggle-option" data-entry="billet">🎟️ Billetkrævet</button>
+            </div>
+          </div>
+
+          <!-- Reset Filter Button -->
+          <button id="reset-filters-btn" class="reset-btn">
+            <i class="fa-solid fa-arrow-rotate-left"></i> Nulstil alle filtre
+          </button>
+        </div>
+
+        <!-- Markets List View -->
+        <div class="markets-list-container">
+          <div id="markets-list" class="markets-list">
+            <!-- Dynamic market cards generated by app.js -->
+          </div>
+          <div id="no-results" class="no-results" style="display: none;">
+            <i class="fa-solid fa-ghost"></i>
+            <p>Ingen julemarkeder matchede din søgning.</p>
+            <button id="no-results-reset" class="secondary-btn">Nulstil filtrering</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Map View -->
+      <section class="map-container">
+        <div id="map"></div>
+        
+        <!-- Animated Christmas Lights Bar along bottom edge of map -->
+        <div class="christmas-lights-bar">
+          <ul class="lightbulb-string">
+            <li></li><li></li><li></li><li></li><li></li>
+            <li></li><li></li><li></li><li></li><li></li>
+            <li></li><li></li><li></li><li></li><li></li>
+            <li></li><li></li><li></li><li></li><li></li>
+            <li></li><li></li><li></li><li></li><li></li>
+          </ul>
+        </div>
+
+        <!-- Map Overlay Floating Controls -->
+        <div class="map-overlay-controls">
+          <button id="recenter-map-btn" class="map-fab" title="Nulstil kortudsnit (Hele Danmark)">
+            <i class="fa-solid fa-compass"></i>
+            <span>Hele Danmark</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Detailed Market Modal -->
+    <div id="market-modal" class="modal-backdrop" style="display: none;" aria-hidden="true">
+      <div class="modal-card">
+        <button id="close-modal-btn" class="modal-close-btn" aria-label="Luk vindue">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div id="modal-content" class="modal-body">
+          <!-- Dynamic detail content generated by app.js -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Application JS -->
+  <script src="app.js"></script>
+</body>
+</html>
